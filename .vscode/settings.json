@@ -1,0 +1,14 @@
+{
+  // Format every file when you hit save
+  "editor.formatOnSave": true,
+  // Use Prettier as the formatter
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Auto-fix ESLint problems on save too
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Make Tailwind IntelliSense work inside the cn() helper
+  "tailwindCSS.experimental.classRegex": [
+    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ]
+}

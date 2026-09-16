@@ -1,26 +1,169 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Tells Tailwind that dark mode is triggered by a .dark class on <html>,
+   rather than by the user's OS setting alone. next-themes toggles this class. */
+@custom-variant dark (&:is(.dark *));
 
+/*
+  @theme inline registers our CSS variables as real Tailwind utilities.
+  Defining --color-brick here is what makes `bg-brick` and `text-brick`
+  work as classes. This is Tailwind v4's way of extending the theme —
+  it replaces the old tailwind.config.js `extend` block.
+*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* --- Our own brand tokens, beyond what shadcn ships --- */
+  /* Brick: Ormskirk terrace red. Used for calls-to-action and prices. */
+  --color-brick: var(--brick);
+  --color-brick-foreground: var(--brick-foreground);
+  /* Campus: reserved ONLY for distance-to-Edge-Hill indicators. */
+  --color-campus: var(--campus);
+  --color-campus-foreground: var(--campus-foreground);
+
+  /* Fonts. These variables are set by next/font in layout.tsx. */
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage);
+
+  /* Border radius scale, derived from one base value. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+  LIGHT MODE VALUES.
+  Colours are in oklch(lightness chroma hue) — a perceptual colour space.
+  The practical benefit: change only the lightness number and the colour
+  stays recognisably the same hue. Much easier to build a palette with
+  than hex codes.
+*/
+:root {
+  --radius: 0.75rem;
+
+  /* Warm off-white, like paper. Not pure white — softer on the eye
+     and instantly less "default Tailwind template". */
+  --background: oklch(0.99 0.004 95);
+  --foreground: oklch(0.23 0.02 255);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.02 255);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.02 255);
+
+  /* Deep slate navy — headers, primary buttons, nav */
+  --primary: oklch(0.32 0.045 255);
+  --primary-foreground: oklch(0.98 0.005 95);
+
+  --secondary: oklch(0.96 0.008 95);
+  --secondary-foreground: oklch(0.32 0.045 255);
+
+  --muted: oklch(0.96 0.008 95);
+  --muted-foreground: oklch(0.52 0.02 255);
+
+  --accent: oklch(0.95 0.015 60);
+  --accent-foreground: oklch(0.32 0.045 255);
+
+  --destructive: oklch(0.58 0.21 27);
+  --destructive-foreground: oklch(0.98 0.005 95);
+
+  --border: oklch(0.91 0.01 95);
+  --input: oklch(0.91 0.01 95);
+  --ring: oklch(0.55 0.13 42);
+
+  /* Brand */
+  --brick: oklch(0.55 0.13 42);
+  --brick-foreground: oklch(0.99 0.004 95);
+  --campus: oklch(0.55 0.12 155);
+  --campus-foreground: oklch(0.99 0.004 95);
+}
+
+/* DARK MODE VALUES. Same variable names, different values —
+   which is why every component flips automatically. */
+.dark {
+  --background: oklch(0.19 0.02 255);
+  --foreground: oklch(0.96 0.005 95);
+
+  --card: oklch(0.23 0.022 255);
+  --card-foreground: oklch(0.96 0.005 95);
+
+  --popover: oklch(0.23 0.022 255);
+  --popover-foreground: oklch(0.96 0.005 95);
+
+  --primary: oklch(0.96 0.005 95);
+  --primary-foreground: oklch(0.23 0.02 255);
+
+  --secondary: oklch(0.28 0.022 255);
+  --secondary-foreground: oklch(0.96 0.005 95);
+
+  --muted: oklch(0.28 0.022 255);
+  --muted-foreground: oklch(0.68 0.02 255);
+
+  --accent: oklch(0.3 0.03 60);
+  --accent-foreground: oklch(0.96 0.005 95);
+
+  --destructive: oklch(0.62 0.19 27);
+  --destructive-foreground: oklch(0.96 0.005 95);
+
+  --border: oklch(0.31 0.02 255);
+  --input: oklch(0.31 0.02 255);
+  --ring: oklch(0.62 0.13 42);
+
+  --brick: oklch(0.63 0.14 42);
+  --brick-foreground: oklch(0.19 0.02 255);
+  --campus: oklch(0.65 0.13 155);
+  --campus-foreground: oklch(0.19 0.02 255);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* Enable nicer font rendering features */
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Headings use the display font automatically, with tight tracking.
+     This one rule is doing a lot of the "looks professional" work. */
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Visible focus ring for keyboard users — an accessibility requirement
+     from the brief. Never remove this without replacing it. */
+  :focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
 }
