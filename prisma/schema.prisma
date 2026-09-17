@@ -1,0 +1,384 @@
+// =============================================================================
+// CLOCKTOWER — DATABASE SCHEMA
+// Student accommodation near Edge Hill University, Ormskirk.
+// =============================================================================
+
+generator client {
+    provider = "prisma-client-js"
+    engineType = "client"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+// =============================================================================
+// ENUMS
+// An enum is a fixed list of allowed values, enforced by the database itself.
+// Using enums instead of plain strings means a typo like "LANDORD" is
+// impossible — it fails at compile time AND at insert time.
+// =============================================================================
+
+enum UserRole {
+ STUDENT
+ LANDLORD
+ ADMIN
+}
+
+enum PropertyType {
+    HOUSE
+    APARTMENT
+    FLAT
+    STUDIO
+    ENSUITE
+    ROOM
+}
+
+
+enum PropertyStatus {
+    DRAFT
+    PENDING
+    APPROVED
+    REJECTED
+    ARCHIVED
+}
+
+enum EnquiryStatus {
+    NEW
+    READ
+    RESPONDED
+    CLOSED
+}
+
+enum ReportReason {
+  MISLEADING
+  UNAVAILABLE
+  INAPPROPRIATE
+  SUSPECTED_SCAM
+  DUPLICATE
+  OTHER
+}
+
+enum ReportStatus {
+    OPEN 
+    REVIEWING
+    RESOLVED
+    DISMISSED
+}
+
+// --- Clocktower-specific ---
+// Student housing runs on the academic calendar, not the standard 12-month
+// AST. This distinction is one of the things that makes the app genuinely
+// useful to Edge Hill students, so it belongs in the schema.
+
+enum TenancyType {
+    ACADEMIC_YEAR
+    TWELVE_MONTH
+    SEMESTER
+    FLEXIBLE
+}
+
+// How bills are handled — a top-three concern for student renters
+
+enum BillsPolicy {
+    INCLUDED
+    CAPPED
+    EXCLUDED
+}
+
+// =============================================================================
+// USER
+// =============================================================================
+
+
+model User {
+    id  String  @id @default(cuid())
+    email String @unique
+
+// Nullable because a future OAuth (Google) signup has no password.
+  // For credentials signup this holds a bcrypt HASH — never plaintext.
+
+    passwordHash String?
+    name String
+    image String?
+    role UserRole @default(STUDENT)
+
+ // Landlord-only fields. Nullable because students don't have them.
+    phone String?
+    bio String? @db.Text
+    companyName String?
+    isVerified Boolean @default(false)   // admin-verified landlord badge
+
+  // Student-only field — powers "students at your university" context.
+
+    university String?
+
+ // Soft moderation: admins suspend rather than delete, so enquiry history
+  // and audit trails survive.
+
+    isSuspended Boolean @default(false)
+    suspendedAt DateTime?
+
+    emailVerified DateTime?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    properties Property[]
+    favourites Favourite[]
+    sentEnquiries Enquiry[]   @relation("StudentEnquiries")
+    receivedEnquiries Enquiry[]  @relation("LandlordEnquiries")
+    replies EnquiryReply[]
+    reports PropertyReport[]
+    views PropertyView[]
+    accounts Account[]
+    sessions Session[]
+
+    @@index([role])
+    @@index([email])
+}
+
+
+// -----------------------------------------------------------------------------
+// Auth.js tables. Required by the Prisma adapter.
+// We use credentials + JWT sessions now, but having these means adding
+// "Sign in with Google" later is a config change, not a migration.
+// -----------------------------------------------------------------------------
+
+model Account {
+    id String @id @default(cuid())
+    userId String
+    type String
+    provider String
+    providerAccountId String
+    refresh_token String? @db.Text
+    access_token String?  @db.Text
+    expires_at Int?
+    token_type String?
+    scope String?
+    id_token String?    @db.Text
+    session_state String?
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerAccountId])
+    @@index([userId])
+}
+
+model Session {
+    id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId   String
+  expires  DateTime
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+   
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token String   @unique
+  expires DateTime
+
+  @@unique([identifier, token])
+}
+
+model Property {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  title       String
+  description String       @db.Text  // @db.Text = unlimited length, not VARCHAR(191)
+  rentPence       Int
+  depositPence    Int
+  billsCapPence   Int?
+  isPricedPerWeek Boolean @default(false)
+
+  
+  bedrooms      Int
+  bathrooms     Int
+  propertyType  PropertyType
+  isFurnished   Boolean      @default(true)
+  billsPolicy   BillsPolicy  @default(EXCLUDED)
+  isStudentOnly Boolean      @default(true)
+  totalHousemates Int?
+
+  // --- Location ---
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  postcode     String
+  latitude     Float
+  longitude    Float
+
+  distanceMetres Int?
+  walkMinutes    Int?
+  cycleMinutes   Int?
+  busRoute       String?
+
+  // --- Availability ---
+  availableFrom DateTime
+  availableTo   DateTime?
+  isAvailable   Boolean     @default(true)
+  tenancyType   TenancyType @default(ACADEMIC_YEAR)
+
+  // --- Moderation ---
+  status       PropertyStatus @default(PENDING)
+  rejectedNote String?        @db.Text  // admin's reason, shown to the landlord
+  approvedAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- Relations ---
+  landlordId String
+  landlord   User   @relation(fields: [landlordId], references: [id], onDelete: Restrict)
+
+  images     PropertyImage[]
+  amenities  Amenity[]        // implicit many-to-many; Prisma manages the join table
+  favourites Favourite[]
+  enquiries  Enquiry[]
+  reports    PropertyReport[]
+  views      PropertyView[]
+
+  @@index([city])
+  @@index([status, isAvailable])
+  @@index([rentPence])
+  @@index([bedrooms])
+  @@index([propertyType])
+  @@index([walkMinutes])
+  @@index([landlordId])
+  @@index([availableFrom])
+  @@index([status, city, rentPence])
+}
+
+model PropertyImage {
+  id         String  @id @default(cuid())
+  url        String
+  // UploadThing's file key — needed to DELETE the file from storage
+  // when the image row is removed. Without it we'd orphan files forever.
+  fileKey    String?
+  // Required for screen readers. Not optional in this project.
+  altText    String
+  // Display order in the gallery. position 0 = the card thumbnail.
+  position   Int     @default(0)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId, position])
+}
+
+
+model Amenity {
+  id         String     @id @default(cuid())
+  // Stable machine-readable key used in URL filters: ?amenities=wifi,parking
+  slug       String     @unique
+  name       String    
+  icon       String
+  category   String     @default("general")
+
+  properties Property[]
+
+  @@index([slug])
+}
+
+model Favourite {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  @@unique([userId, propertyId])
+  @@index([userId])
+}
+
+model Enquiry {
+  id        String        @id @default(cuid())
+  message   String        @db.Text
+  status    EnquiryStatus @default(NEW)
+
+  // Context captured at the time of sending. If the student's plans change
+  // later, the enquiry should still show what they originally asked for.
+  moveInDate DateTime?
+  groupSize  Int?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  readAt    DateTime?
+
+  studentId String
+  student   User   @relation("StudentEnquiries", fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Denormalised: we store landlordId even though we could reach it via
+  // property.landlordId. It makes "all my enquiries" a single indexed query
+  // instead of a join, and it preserves who was contacted if the property
+  // later changes hands.
+  landlordId String
+  landlord   User   @relation("LandlordEnquiries", fields: [landlordId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  replies EnquiryReply[]
+
+  @@index([studentId, createdAt])
+  @@index([landlordId, status])
+  @@index([propertyId])
+}
+
+// A threaded conversation, rather than one single reply field.
+// Real enquiries go back and forth.
+model EnquiryReply {
+  id        String   @id @default(cuid())
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  enquiryId String
+  enquiry   Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+
+  authorId  String
+  author    User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([enquiryId, createdAt])
+}
+
+// =============================================================================
+// MODERATION & ANALYTICS
+// =============================================================================
+
+model PropertyReport {
+  id          String       @id @default(cuid())
+  reason      ReportReason
+  details     String?      @db.Text
+  status      ReportStatus @default(OPEN)
+  resolvedAt  DateTime?
+  adminNote   String?      @db.Text
+
+  createdAt DateTime @default(now())
+
+  reporterId String
+  reporter   User   @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // One report per user per property — stops a single user spamming reports.
+  @@unique([reporterId, propertyId])
+  @@index([status, createdAt])
+}
+
+model PropertyView {
+  id        String   @id @default(cuid())
+  viewedAt  DateTime @default(now())
+  viewCount Int      @default(1)
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([userId, viewedAt])
+}

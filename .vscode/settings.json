@@ -8,7 +8,6 @@
     "source.fixAll.eslint": "explicit"
   },
   // Make Tailwind IntelliSense work inside the cn() helper
-  "tailwindCSS.experimental.classRegex": [
-    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
-  ]
+  "tailwindCSS.experimental.classRegex": [["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]],
+  "prisma.pinToPrisma6": true
 }
