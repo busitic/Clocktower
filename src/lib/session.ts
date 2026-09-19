@@ -9,7 +9,7 @@ export async function requireUser() {
     return session.user;
 }
 
-export async function RequireRole(...allowedRoles: UserRole[]) {
+export async function requireRole(...allowedRoles: UserRole[]) {
     const user = await requireUser();
     if(!allowedRoles.includes(user.role)) {
         throw new Error("FORBIDDEN");
