@@ -3,6 +3,8 @@ import { Bricolage_Grotesque, Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
 
 /*
   next/font downloads these at BUILD time and self-hosts them.
@@ -48,12 +50,16 @@ export default function RootLayout({
     <html lang="en-GB" suppressHydrationWarning>
       <body className={`${geist.variable} ${bricolage.variable}`}>
         <ThemeProvider
-          attribute="class"       // toggles a .dark class on <html>
-          defaultTheme="system"   // respects the user's OS setting
+          attribute="class" // toggles a .dark class on <html>
+          defaultTheme="system" // respects the user's OS setting
           enableSystem
           disableTransitionOnChange // stops colours animating awkwardly on switch
         >
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div>
           {/* Mounted once here so any component anywhere can fire a toast */}
           <Toaster richColors position="top-center" />
         </ThemeProvider>

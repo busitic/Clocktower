@@ -324,6 +324,21 @@ async function main() {
         },
       },
     });
+
+        const created = await prisma.property.findUniqueOrThrow({ where: { slug } });
+    const existingImage = await prisma.propertyImage.findFirst({
+      where: { propertyId: created.id },
+    });
+    if (!existingImage) {
+      await prisma.propertyImage.create({
+        data: {
+          propertyId: created.id,
+          url: `https://picsum.photos/seed/${slug}/800/600`,
+          altText: `Exterior of ${p.title}`,
+          position: 0,
+        },
+      });
+    }
     count++;
   }
   console.log(`✅ Seeded ${count} properties`);
