@@ -99,6 +99,22 @@ export async function getPropertyBySlug(slug: string) {
   });
 }
 
+ export async function getVisibleProperty(
+  slug: string,
+  viewer: {id: string; role: string} | null,
+ ) {
+  const property = await getPropertyBySlug(slug);
+  if (!property) return null;
+
+  if(property.status === "APPROVED") return property;
+
+  const isOwner = viewer?.id === property.landlordId;
+  const isAdmin = viewer?.role === "ADMIN";
+  return isOwner || isAdmin ? property : null;
+  
+ }
+
+
 export async function getPropertyById(id: string) {
   return prisma.property.findUnique({ where: { id } });
 }

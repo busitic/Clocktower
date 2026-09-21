@@ -26,6 +26,7 @@ export async function getFavourites(userId: string) {
             property: {
                 include: {
                     images: { orderBy: { position: "asc" }, take: 1 },
+                    amenities: true,
                 },
             },
         },

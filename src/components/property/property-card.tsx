@@ -17,10 +17,12 @@ export function PropertyCard({
     property,
     isFavourited = false,
     showFavourite = false,
+    onRemoved,
 }: {
     property: PropertyCardData;
     isFavourited?: boolean;
     showFavourite?: boolean;
+    onRemoved?: () => void;
 }) {
     const image = property.images[0];
 

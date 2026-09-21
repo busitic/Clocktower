@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 export function FavouriteButton({
   propertyId,
   initialFavourited,
+  onRemoved,
 }: {
   propertyId: string;
   initialFavourited: boolean;
+  onRemoved?: () => void;
 }) {
   const [isFavourited, setIsFavourited] = useState(initialFavourited);
   const [isPending, startTransition] = useTransition();
