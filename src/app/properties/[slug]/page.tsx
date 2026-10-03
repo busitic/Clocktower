@@ -18,6 +18,7 @@ import {
   ShowerHead, BedDouble as BedIcon, Lamp, Dumbbell, ShieldCheck,
   Flame, PawPrint, Check,
 } from "lucide-react";
+import { ReportDialog } from "@/components/property/report-dialog";
 
 // Maps each amenity's icon slug (stored in the DB, per Phase 2's seed) to
 // an actual Lucide component. Falls back to Check for anything unmapped.
@@ -183,6 +184,12 @@ export default async function PropertyDetailsPage({ params }: Props) {
                   <Badge variant="outline" className="ml-2">Verified</Badge>
                 )}
               </p>
+              {session?.user && !isOwnProperty && (
+                <>
+                <Separator className="my-4" />
+                <ReportDialog propertyId={property.id} />
+                </>
+              )}
             </CardContent>
           </Card>
 
