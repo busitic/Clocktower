@@ -14,9 +14,7 @@ export const propertySearchSchema = z.object({
   minPrice: z.coerce.number().int().min(0).optional(),
   maxPrice: z.coerce.number().int().min(0).optional(),
   bedrooms: z.coerce.number().int().min(0).optional(),
-  propertyType: z
-    .enum(["HOUSE", "APARTMENT", "FLAT", "STUDIO", "ENSUITE", "ROOM"])
-    .optional(),
+  propertyType: z.enum(["HOUSE", "APARTMENT", "FLAT", "STUDIO", "ENSUITE", "ROOM"]).optional(),
   billsIncluded: z.coerce.boolean().optional(),
   furnished: z.coerce.boolean().optional(),
   maxWalkMinutes: z.coerce.number().int().min(0).optional(),
@@ -24,9 +22,7 @@ export const propertySearchSchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? val.split(",").filter(Boolean) : [])),
-  sort: z
-    .enum(["price-asc", "price-desc", "newest", "oldest", "closest"])
-    .default("newest"),
+  sort: z.enum(["price-asc", "price-desc", "newest", "oldest", "closest"]).default("newest"),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(12),
 });
@@ -51,8 +47,8 @@ export const propertyInputSchema = z.object({
   tenancyType: z.enum(["ACADEMIC_YEAR", "TWELVE_MONTH", "SEMESTER", "FLEXIBLE"]),
   billsPolicy: z.enum(["INCLUDED", "CAPPED", "EXCLUDED"]),
   billsCapPounds: z.coerce.number().positive().optional(),
-  isFurnished: z.coerce.boolean(),
-  isStudentOnly: z.coerce.boolean().default(true),
+  isFurnished: z.boolean(),
+  isStudentOnly: z.boolean().default(true),
   totalHousemates: z.coerce.number().int().min(1).max(20).optional(),
   addressLine1: z.string().trim().min(3).max(200),
   addressLine2: z.string().trim().max(200).optional(),
@@ -75,3 +71,30 @@ export const enquirySchema = z.object({
 });
 
 export type EnquiryInput = z.infer<typeof enquirySchema>;
+
+
+// Two separate types, not z.infer<> alone — because .coerce fields mean
+// the shape react-hook-form HOLDS while typing (strings) differs from the
+// shape zod PRODUCES after validation (numbers/dates). Same fix as the
+// property-details enquiry form in Phase 6.
+export type PropertyInputForm = z.input<typeof propertyInputSchema>;
+export type PropertyInputOutput = z.output<typeof propertyInputSchema>;
+
+// Images aren't covered by propertyInputSchema at all — validated separately.
+export const propertyImagesSchema = z
+  .array(z.object({ url: z.string().url(), altText: z.string().trim().min(3) }))
+  .min(1, "Add at least one image");
+export type PropertyImagesInput = z.infer<typeof propertyImagesSchema>;
+
+// The form never collects lat/lng directly — they're resolved from the
+// postcode server-side in createProperty(). So the form validates against
+// this schema (everything except lat/lng), and the full propertyInputSchema
+// (which still requires them) is only ever parsed AFTER geocoding, inside
+// the server action.
+export const propertyFormClientSchema = propertyInputSchema.omit({
+  latitude: true,
+  longitude: true,
+});
+
+export type PropertyFormClientInput = z.input<typeof propertyFormClientSchema>;
+export type PropertyFormClientOutput = z.output<typeof propertyFormClientSchema>;

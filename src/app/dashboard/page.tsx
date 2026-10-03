@@ -1,68 +1,43 @@
-import type { Metadata } from "next";
-import Link from "next/link";
 import { requireRole } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { PropertyCard } from "@/components/property/property-card";
-import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MessageSquare, Clock } from "lucide-react";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { Building2, Eye, Heart, Inbox } from "lucide-react";
 
-export const metadata: Metadata = { title: "Dashboard" };
+/*
+  Uses requireRole() from Phase 3's session.ts, not a raw auth() check —
+  that's the real authorization boundary per CVE-2025-29927. Middleware
+  already blocks non-landlords from /dashboard/landlord, but this page
+  checks again regardless, same defense-in-depth pattern as every
+  protected page since Phase 3.
+*/
+export default async function LandlordOverviewPage() {
+  const user = await requireRole("LANDLORD");
 
-export default async function StudentDashboardPage() {
-  const user = await requireRole("STUDENT");
-
-  const [favouriteCount, enquiryCount, recentViews] = await Promise.all([
-    prisma.favourite.count({ where: { userId: user.id } }),
-    prisma.enquiry.count({ where: { studentId: user.id } }),
-    prisma.propertyView.findMany({
-      where: { userId: user.id },
-      orderBy: { viewedAt: "desc" },
-      take: 3,
-      include: { property: { include: { images: { take: 1, orderBy: { position: "asc" } }, amenities: true } } },
-    }),
-  ]);
+  const [totalProperties, availableProperties, newEnquiries, totalFavourites, totalViews] =
+    await Promise.all([
+      prisma.property.count({ where: { landlordId: user.id } }),
+      prisma.property.count({ where: { landlordId: user.id, isAvailable: true } }),
+      prisma.enquiry.count({ where: { landlordId: user.id, status: "NEW" } }),
+      prisma.favourite.count({ where: { property: { landlordId: user.id } } }),
+      prisma.propertyView.aggregate({
+        where: { property: { landlordId: user.id } },
+        _sum: { viewCount: true },
+      }),
+    ]);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-semibold">Welcome back, {user.name?.split(" ")[0]}</h1>
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <Link href="/dashboard/favourites">
-          <Card className="hover:border-brick transition-colors">
-            <CardContent className="flex items-center gap-4 pt-6">
-              <Heart className="text-brick size-8" />
-              <div>
-                <p className="text-2xl font-semibold">{favouriteCount}</p>
-                <p className="text-muted-foreground text-sm">Saved favourites</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/dashboard/enquiries">
-          <Card className="hover:border-brick transition-colors">
-            <CardContent className="flex items-center gap-4 pt-6">
-              <MessageSquare className="text-brick size-8" />
-              <div>
-                <p className="text-2xl font-semibold">{enquiryCount}</p>
-                <p className="text-muted-foreground text-sm">Enquiries sent</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your listings on Clocktower.</p>
       </div>
 
-      {recentViews.length > 0 && (
-        <div className="mt-10">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Clock className="size-5" /> Recently viewed
-          </h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {recentViews.map((view) => (
-              <PropertyCard key={view.id} property={view.property} />
-            ))}
-          </div>
-        </div>
-      )}
-    </main>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Properties listed" value={totalProperties} sublabel={`${availableProperties} available now`} icon={Building2} />
+        <StatCard label="New enquiries" value={newEnquiries} sublabel="Awaiting your reply" icon={Inbox} highlight={newEnquiries > 0} />
+        <StatCard label="Favourited" value={totalFavourites} sublabel="Across all listings" icon={Heart} />
+        <StatCard label="Total views" value={totalViews._sum.viewCount ?? 0} sublabel="Across all listings" icon={Eye} />
+      </div>
+    </div>
   );
 }
