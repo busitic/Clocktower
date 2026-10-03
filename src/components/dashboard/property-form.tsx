@@ -1,5 +1,5 @@
 "use client";
-console.log("FILE LOADED");
+
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useTransition } from "react";
@@ -27,8 +27,8 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ImageUpload, type UploadedImage } from "@/components/dashboard/image-upload";
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   HOUSE: "House",
@@ -52,16 +52,11 @@ const BILLS_POLICY_LABELS: Record<string, string> = {
   EXCLUDED: "Excluded",
 };
 
-interface PropertyImageInput {
-  url: string;
-  altText: string;
-}
-
 interface PropertyFormProps {
   defaultValues?: Partial<PropertyFormClientInput>;
-  defaultImages?: PropertyImageInput[];
+  defaultImages?: UploadedImage[];
   amenities: { id: string; slug: string; name: string; category: string }[];
-  onSubmit: (data: PropertyFormClientOutput, images: PropertyImageInput[]) => Promise<void>;
+  onSubmit: (data: PropertyFormClientOutput, images: UploadedImage[]) => Promise<void>;
   submitLabel?: string;
 }
 
@@ -73,47 +68,47 @@ export function PropertyForm({
   submitLabel = "List property",
 }: PropertyFormProps) {
   const [isPending, startTransition] = useTransition();
-  const [images, setImages] = useState<PropertyImageInput[]>(
-    defaultImages ?? [{ url: "", altText: "" }],
-  );
+  const [images, setImages] = useState<UploadedImage[]>(defaultImages ?? []);
 
   // Three generics — same fix as the Phase 6 enquiry form: .coerce fields
   // mean input (string, while typing) and output (number, post-validation)
   // shapes differ, so a single generic here breaks Zod's coercion.
-const form = useForm<PropertyFormClientInput, unknown, PropertyFormClientOutput>({
-  resolver: zodResolver(propertyFormClientSchema),
-  defaultValues: {
-    // same defaultValues object as before — just no latitude/longitude in it
-    title: "",
-    description: "",
-    propertyType: "HOUSE",
-    tenancyType: "ACADEMIC_YEAR",
-    rentPounds: "" as unknown as number,
-    depositPounds: "" as unknown as number,
-    billsPolicy: "EXCLUDED",
-    billsCapPounds: undefined,
-    bedrooms: "" as unknown as number,
-    bathrooms: "" as unknown as number,
-    isFurnished: true,
-    isStudentOnly: true,
-    totalHousemates: undefined,
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    postcode: "",
-    busRoute: "",
-    availableFrom: "" as unknown as Date,
-    amenitySlugs: [],
-    ...defaultValues,
-  },
-});
+  const form = useForm<PropertyFormClientInput, unknown, PropertyFormClientOutput>({
+    resolver: zodResolver(propertyFormClientSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      propertyType: "HOUSE",
+      tenancyType: "ACADEMIC_YEAR",
+      rentPounds: "" as unknown as number,
+      depositPounds: "" as unknown as number,
+      billsPolicy: "EXCLUDED",
+      billsCapPounds: undefined,
+      bedrooms: "" as unknown as number,
+      bathrooms: "" as unknown as number,
+      isFurnished: true,
+      isStudentOnly: true,
+      totalHousemates: undefined,
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      postcode: "",
+      busRoute: "",
+      availableFrom: "" as unknown as Date,
+      amenitySlugs: [],
+      ...defaultValues,
+    },
+  });
 
   const billsPolicy = useWatch({ control: form.control, name: "billsPolicy" });
 
   function handleSubmit(data: PropertyFormClientOutput) {
-    console.log("SUBMIT FIRED",data)
-    if (images.some((img) => !img.url || !img.altText)) {
-      toast.error("Every image needs a URL and a description.");
+    if (images.length === 0) {
+      toast.error("Add at least one image.");
+      return;
+    }
+    if (images.some((img) => !img.url || !img.fileKey || !img.altText)) {
+      toast.error("Every image needs a description before you can submit.");
       return;
     }
     startTransition(async () => {
@@ -125,15 +120,9 @@ const form = useForm<PropertyFormClientInput, unknown, PropertyFormClientOutput>
     });
   }
 
-  function updateImage(index: number, patch: Partial<PropertyImageInput>) {
-    setImages((prev) => prev.map((img, i) => (i === index ? { ...img, ...patch } : img)));
-  }
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit, (errors) => {
-        console.log("VALIDATION FAILED:", errors);
-              })} className="max-w-2xl space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-2xl space-y-8">
         {/* --- Basics --- */}
         <section className="space-y-4">
           <h2 className="font-medium">Basics</h2>
@@ -169,7 +158,6 @@ const form = useForm<PropertyFormClientInput, unknown, PropertyFormClientOutput>
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Property type</FormLabel>
-                {/* Base UI: onValueChange gives string | null, needs a fallback */}
                 <Select value={field.value} onValueChange={(v) => field.onChange(v ?? "HOUSE")}>
                   <FormControl>
                     <SelectTrigger>
@@ -530,43 +518,10 @@ const form = useForm<PropertyFormClientInput, unknown, PropertyFormClientOutput>
           </div>
         </section>
 
-        {/* --- Images (pasted URLs, per your call) --- */}
+        {/* --- Images (UploadThing, Phase 11) --- */}
         <section className="space-y-4">
           <h2 className="font-medium">Images</h2>
-          {images.map((img, index) => (
-            <div key={index} className="flex items-start gap-2">
-              <Input
-                placeholder="https://..."
-                value={img.url}
-                onChange={(e) => updateImage(index, { url: e.target.value })}
-                className="flex-1"
-              />
-              <Input
-                placeholder="Description for screen readers"
-                value={img.altText}
-                onChange={(e) => updateImage(index, { altText: e.target.value })}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setImages((prev) => prev.filter((_, i) => i !== index))}
-                disabled={images.length === 1}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setImages((prev) => [...prev, { url: "", altText: "" }])}
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Add image
-          </Button>
+          <ImageUpload images={images} onChange={setImages} />
         </section>
 
         <Button type="submit" disabled={isPending}>

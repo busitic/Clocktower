@@ -6,8 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "picsum.photos" },
-      { protocol: "https", hostname: "utfs.io" }, // UploadThing, for Phase 11
-      { protocol: "https", hostname: "**" },  
+      { protocol: "https", hostname: "utfs.io" }, // UploadThing, for Phase 11  
     ],
   },
 };

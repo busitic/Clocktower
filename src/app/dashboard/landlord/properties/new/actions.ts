@@ -2,9 +2,18 @@
 
 import { requireRole } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { propertyInputSchema, propertyImagesSchema, type PropertyInputForm } from "@/lib/validations/property";
+import { propertyInputSchema, type PropertyFormClientOutput } from "@/lib/validations/property";
 import { calculateCampusDistance } from "@/lib/campus";
 import { redirect } from "next/navigation";
+import { z } from "zod";
+
+const imageSchema = z
+  .array(z.object({
+    url: z.string().url(),
+    fileKey: z.string().min(1),
+    altText: z.string().trim().min(3),
+  }))
+  .min(1, "Add at least one image");
 
 async function geocodePostcode(postcode: string) {
   const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode.trim())}`);
@@ -23,12 +32,12 @@ function slugify(title: string) {
 // rawInput is the form's fields MINUS lat/lng (the form only collects a
 // postcode) — we geocode first, merge coordinates in, THEN validate,
 // because propertyInputSchema requires latitude/longitude as inputs.
-export async function createProperty(rawInput: PropertyInputForm, rawImages: unknown) {
+export async function createProperty(rawInput: PropertyFormClientOutput, rawImages: unknown) {
   const user = await requireRole("LANDLORD");
 
   const { latitude, longitude } = await geocodePostcode(rawInput.postcode);
   const input = propertyInputSchema.parse({ ...rawInput, latitude, longitude });
-  const images = propertyImagesSchema.parse(rawImages);
+  const images = imageSchema.parse(rawImages);
 
   const distance = calculateCampusDistance(latitude, longitude);
 
@@ -63,7 +72,14 @@ export async function createProperty(rawInput: PropertyInputForm, rawImages: unk
       // same moderation gate the seed data bypassed with status: "APPROVED".
       landlordId: user.id,
       amenities: { connect: input.amenitySlugs.map((slug) => ({ slug })) },
-      images: { create: images.map((img, i) => ({ url: img.url, altText: img.altText, position: i })) },
+      images: {
+        create: images.map((img, i) => ({
+          url: img.url,
+          fileKey: img.fileKey,
+          altText: img.altText,
+          position: i,
+        })),
+      },
     },
   });
 
