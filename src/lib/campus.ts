@@ -9,7 +9,7 @@
 // Edge Hill University main campus, St Helens Road, Ormskirk L39 4QP.
 // Approximate centre of campus. Verify on Google Maps and adjust if you
 // want a different anchor point (e.g. the Hub, or the main entrance).
-export const CAMPUS = {
+export const CAMPUS_COORDINATES = {
   name: "Edge Hill University",
   latitude: 53.5627,
   longitude: -2.8759,
@@ -78,8 +78,8 @@ export function calculateCampusDistance(
   const straightLine = haversineMetres(
     latitude,
     longitude,
-    CAMPUS.latitude,
-    CAMPUS.longitude,
+    CAMPUS_COORDINATES.latitude,
+    CAMPUS_COORDINATES.longitude,
   );
 
   const walkingDistance = straightLine * STREET_DETOUR_FACTOR;

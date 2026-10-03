@@ -167,3 +167,12 @@
     @apply outline-ring outline-2 outline-offset-2;
   }
 }
+
+.leaflet-container {
+  z-index: 0;
+}
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10;
+}

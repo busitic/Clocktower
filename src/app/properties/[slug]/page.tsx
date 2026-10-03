@@ -19,6 +19,7 @@ import {
   Flame, PawPrint, Check,
 } from "lucide-react";
 import { ReportDialog } from "@/components/property/report-dialog";
+import { PropertyMapWrapper } from "@/components/property/property-map-wrapper";
 
 // Maps each amenity's icon slug (stored in the DB, per Phase 2's seed) to
 // an actual Lucide component. Falls back to Check for anything unmapped.
@@ -155,16 +156,17 @@ export default async function PropertyDetailsPage({ params }: Props) {
             </div>
           )}
 
-          <div className="mt-6">
-            <h2 className="text-lg font-semibold">Location</h2>
-            {/* Real Mapbox map arrives in Phase 11. Coordinates are already
-                stored on the property (latitude/longitude) — this card is
-                exactly where that gets wired in. */}
-            <div className="bg-muted text-muted-foreground mt-3 flex aspect-video items-center justify-center rounded-xl text-sm">
-              Map coming in a later phase — {property.latitude.toFixed(4)}, {property.longitude.toFixed(4)}
-            </div>
-          </div>
-        </div>
+     <div className="mt-6">
+         <h2 className="text-lg font-semibold">Location</h2>
+         <div className="mt-3">
+          <PropertyMapWrapper
+          latitude={property.latitude}
+          longitude={property.longitude}
+           title={property.title}
+        />
+      </div>
+    </div>
+    </div>
 
         <div className="space-y-6">
           <Card>
