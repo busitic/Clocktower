@@ -6,15 +6,15 @@ import { propertyInputSchema, type PropertyFormClientOutput } from "@/lib/valida
 import { calculateCampusDistance } from "@/lib/campus";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 const imageSchema = z
   .array(z.object({
     url: z.string().url(),
-    fileKey: z.string().min(1),
+    fileKey: z.string().min(1).optional().or(z.literal("").transform(() => undefined)),
     altText: z.string().trim().min(3),
   }))
   .min(1, "Add at least one image");
-
 async function geocodePostcode(postcode: string) {
   const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode.trim())}`);
   if (!res.ok) throw new Error("Couldn't find that postcode — double check it and try again.");
@@ -29,16 +29,12 @@ function slugify(title: string) {
   );
 }
 
-// rawInput is the form's fields MINUS lat/lng (the form only collects a
-// postcode) — we geocode first, merge coordinates in, THEN validate,
-// because propertyInputSchema requires latitude/longitude as inputs.
 export async function createProperty(rawInput: PropertyFormClientOutput, rawImages: unknown) {
   const user = await requireRole("LANDLORD");
 
   const { latitude, longitude } = await geocodePostcode(rawInput.postcode);
   const input = propertyInputSchema.parse({ ...rawInput, latitude, longitude });
   const images = imageSchema.parse(rawImages);
-
   const distance = calculateCampusDistance(latitude, longitude);
 
   const property = await prisma.property.create({
@@ -68,8 +64,7 @@ export async function createProperty(rawInput: PropertyFormClientOutput, rawImag
       walkMinutes: distance.walkMinutes,
       cycleMinutes: distance.cycleMinutes,
       availableFrom: input.availableFrom,
-      // status defaults to PENDING — new listings wait for admin approval,
-      // same moderation gate the seed data bypassed with status: "APPROVED".
+      status: "PENDING",
       landlordId: user.id,
       amenities: { connect: input.amenitySlugs.map((slug) => ({ slug })) },
       images: {
@@ -83,5 +78,6 @@ export async function createProperty(rawInput: PropertyFormClientOutput, rawImag
     },
   });
 
+  revalidatePath("/dashboard/landlord/properties");
   redirect(`/dashboard/landlord/properties?created=${property.id}`);
 }

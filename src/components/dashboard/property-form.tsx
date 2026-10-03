@@ -107,10 +107,10 @@ export function PropertyForm({
       toast.error("Add at least one image.");
       return;
     }
-    if (images.some((img) => !img.url || !img.fileKey || !img.altText)) {
-      toast.error("Every image needs a description before you can submit.");
-      return;
-    }
+    if (images.some((img) => !img.url || !img.altText)) {
+  toast.error("Every image needs a description before you can submit.");
+  return;
+}
     startTransition(async () => {
       try {
         await onSubmit(data, images);
