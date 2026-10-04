@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import {
   propertyFormClientSchema,
   type PropertyFormClientInput,
@@ -51,6 +52,31 @@ const BILLS_POLICY_LABELS: Record<string, string> = {
   CAPPED: "Capped",
   EXCLUDED: "Excluded",
 };
+
+/*
+  Layout-only wrapper: gives every group of fields the same card look —
+  a bordered surface, a title + one-line helper text, a divider, then the
+  fields. The entrance animation matches the property cards.
+*/
+function FormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="bg-card animate-in fade-in slide-in-from-bottom-2 rounded-xl border p-6 shadow-sm duration-500">
+      <div className="mb-5 border-b pb-4">
+        <h2 className="text-base font-semibold">{title}</h2>
+        {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
+      </div>
+      <div className="space-y-5">{children}</div>
+    </section>
+  );
+}
 
 interface PropertyFormProps {
   defaultValues?: Partial<PropertyFormClientInput>;
@@ -108,9 +134,9 @@ export function PropertyForm({
       return;
     }
     if (images.some((img) => !img.url || !img.altText)) {
-  toast.error("Every image needs a description before you can submit.");
-  return;
-}
+      toast.error("Every image needs a description before you can submit.");
+      return;
+    }
     startTransition(async () => {
       try {
         await onSubmit(data, images);
@@ -122,10 +148,9 @@ export function PropertyForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-2xl space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="w-full space-y-6">
         {/* --- Basics --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Basics</h2>
+        <FormSection title="Basics" description="The headline details students see first.">
           <FormField
             control={form.control}
             name="title"
@@ -146,72 +171,101 @@ export function PropertyForm({
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea rows={5} {...field} />
+                  <Textarea rows={6} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="propertyType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Property type</FormLabel>
-                <Select value={field.value} onValueChange={(v) => field.onChange(v ?? "HOUSE")}>
+        </FormSection>
+
+        {/* --- Type & availability --- */}
+        <FormSection
+          title="Type & availability"
+          description="What kind of place it is and when it can be moved into."
+        >
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="propertyType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property type</FormLabel>
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v ?? "HOUSE")}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select type">
+                          {(value: string) => PROPERTY_TYPE_LABELS[value] ?? value}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {["HOUSE", "APARTMENT", "FLAT", "STUDIO", "ENSUITE", "ROOM"].map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {PROPERTY_TYPE_LABELS[t]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tenancyType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tenancy type</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v ?? "ACADEMIC_YEAR")}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(value: string) => TENANCY_TYPE_LABELS[value] ?? value}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ACADEMIC_YEAR">Academic year</SelectItem>
+                      <SelectItem value="TWELVE_MONTH">12 months</SelectItem>
+                      <SelectItem value="SEMESTER">Semester</SelectItem>
+                      <SelectItem value="FLEXIBLE">Flexible</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="availableFrom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Available from</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type">
-                        {(value: string) => PROPERTY_TYPE_LABELS[value] ?? value}
-                      </SelectValue>
-                    </SelectTrigger>
+                    <Input
+                      type="date"
+                      onChange={(e) => field.onChange(e.target.value)}
+                      value={
+                        field.value
+                          ? new Date(field.value as unknown as string).toISOString().slice(0, 10)
+                          : ""
+                      }
+                    />
                   </FormControl>
-                  <SelectContent>
-                    {["HOUSE", "APARTMENT", "FLAT", "STUDIO", "ENSUITE", "ROOM"].map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {PROPERTY_TYPE_LABELS[t]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="tenancyType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tenancy type</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => field.onChange(v ?? "ACADEMIC_YEAR")}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue>
-                        {(value: string) => TENANCY_TYPE_LABELS[value] ?? value}
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ACADEMIC_YEAR">Academic year</SelectItem>
-                    <SelectItem value="TWELVE_MONTH">12 months</SelectItem>
-                    <SelectItem value="SEMESTER">Semester</SelectItem>
-                    <SelectItem value="FLEXIBLE">Flexible</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </section>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </FormSection>
 
         {/* --- Pricing --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Pricing</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <FormSection title="Pricing" description="Monthly rent, deposit and how bills are handled.">
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="rentPounds"
@@ -250,57 +304,62 @@ export function PropertyForm({
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="billsPolicy"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bills</FormLabel>
-                <Select value={field.value} onValueChange={(v) => field.onChange(v ?? "EXCLUDED")}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue>
-                        {(value: string) => BILLS_POLICY_LABELS[value] ?? value}
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="INCLUDED">Included</SelectItem>
-                    <SelectItem value="CAPPED">Capped</SelectItem>
-                    <SelectItem value="EXCLUDED">Excluded</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {billsPolicy === "CAPPED" && (
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="billsCapPounds"
+              name="billsPolicy"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bills cap (£/month)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      {...field}
-                      value={(field.value as string | number | undefined) ?? ""}
-                    />
-                  </FormControl>
+                  <FormLabel>Bills</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v ?? "EXCLUDED")}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(value: string) => BILLS_POLICY_LABELS[value] ?? value}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="INCLUDED">Included</SelectItem>
+                      <SelectItem value="CAPPED">Capped</SelectItem>
+                      <SelectItem value="EXCLUDED">Excluded</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          )}
-        </section>
+
+            {/* Only appears next to the Bills select when "Capped" is chosen */}
+            {billsPolicy === "CAPPED" && (
+              <FormField
+                control={form.control}
+                name="billsCapPounds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bills cap (£/month)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        value={(field.value as string | number | undefined) ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+        </FormSection>
 
         {/* --- Layout --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Layout</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <FormSection title="Layout" description="Size of the property and who it suits.">
+          <div className="grid gap-4 sm:grid-cols-3">
             <FormField
               control={form.control}
               name="bedrooms"
@@ -335,53 +394,72 @@ export function PropertyForm({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="totalHousemates"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Housemates (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={(field.value as string | number | undefined) ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-          <FormField
-            control={form.control}
-            name="totalHousemates"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Total housemates (optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    value={(field.value as string | number | undefined) ?? ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="isFurnished"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2 space-y-0">
-                <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-                <FormLabel className="font-normal">Furnished</FormLabel>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="isStudentOnly"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2 space-y-0">
-                <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-                <FormLabel className="font-normal">Student-only</FormLabel>
-              </FormItem>
-            )}
-          />
-        </section>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="isFurnished"
+              render={({ field }) => (
+                <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border p-3">
+                  <FormControl>
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1">
+                    <FormLabel className="font-normal">Furnished</FormLabel>
+                    <p className="text-muted-foreground text-xs">Beds, desks and sofas included.</p>
+                  </div>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isStudentOnly"
+              render={({ field }) => (
+                <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border p-3">
+                  <FormControl>
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1">
+                    <FormLabel className="font-normal">Student-only</FormLabel>
+                    <p className="text-muted-foreground text-xs">Only students can apply.</p>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+        </FormSection>
 
         {/* --- Location --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Location</h2>
+        <FormSection
+          title="Location"
+          description="Walking and cycling distance to campus is calculated automatically from the postcode."
+        >
           <FormField
             control={form.control}
             name="addressLine1"
@@ -408,7 +486,7 @@ export function PropertyForm({
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="city"
@@ -453,41 +531,11 @@ export function PropertyForm({
               </FormItem>
             )}
           />
-          <p className="text-muted-foreground text-xs">
-            Walking/cycling distance to campus is calculated automatically from the postcode.
-          </p>
-        </section>
-
-        {/* --- Availability --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Availability</h2>
-          <FormField
-            control={form.control}
-            name="availableFrom"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Available from</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    onChange={(e) => field.onChange(e.target.value)}
-                    value={
-                      field.value
-                        ? new Date(field.value as unknown as string).toISOString().slice(0, 10)
-                        : ""
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </section>
+        </FormSection>
 
         {/* --- Amenities --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Amenities</h2>
-          <div className="grid grid-cols-2 gap-2">
+        <FormSection title="Amenities" description="Tick everything the property offers.">
+          <div className="grid gap-2 sm:grid-cols-2">
             {amenities.map((amenity) => (
               <FormField
                 key={amenity.id}
@@ -497,7 +545,7 @@ export function PropertyForm({
                   const current = field.value ?? [];
                   const checked = current.includes(amenity.slug);
                   return (
-                    <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormItem className="hover:bg-muted/50 flex items-center gap-3 space-y-0 rounded-lg border p-3 transition-colors">
                       <FormControl>
                         <Checkbox
                           checked={checked}
@@ -509,24 +557,39 @@ export function PropertyForm({
                           }}
                         />
                       </FormControl>
-                      <FormLabel className="font-normal">{amenity.name}</FormLabel>
+                      <FormLabel className="flex-1 cursor-pointer font-normal">
+                        {amenity.name}
+                      </FormLabel>
                     </FormItem>
                   );
                 }}
               />
             ))}
           </div>
-        </section>
+        </FormSection>
 
         {/* --- Images (UploadThing, Phase 11) --- */}
-        <section className="space-y-4">
-          <h2 className="font-medium">Images</h2>
+        <FormSection
+          title="Images"
+          description="Add at least one photo and describe each one for accessibility."
+        >
           <ImageUpload images={images} onChange={setImages} />
-        </section>
+        </FormSection>
 
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving..." : submitLabel}
-        </Button>
+        {/* Sticky action bar: submit is always reachable on a long form */}
+        <div className="bg-background/90 sticky bottom-0 z-30 flex items-center justify-end gap-3 border-t py-4 backdrop-blur-sm">
+          <Button
+            type="button"
+            variant="outline"
+            nativeButton={false}
+            render={<Link href="/dashboard/landlord/properties" />}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Saving..." : submitLabel}
+          </Button>
+        </div>
       </form>
     </Form>
   );

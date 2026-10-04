@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { PasswordInput } from "@/components/auth/password-input";
 
 function LoginForm() {
   const router = useRouter();
@@ -78,12 +80,22 @@ function LoginForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <PasswordInput autoComplete="current-password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+              <div className="flex justify-end">
+            <Link
+               href="/forgot-password"
+                className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+               >
+                   Forgot password?
+              </Link>
+           </div>
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Logging in…" : "Log in"}
             </Button>

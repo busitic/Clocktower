@@ -157,14 +157,16 @@ export default async function PropertyDetailsPage({ params }: Props) {
           )}
 
      <div className="mt-6">
-         <h2 className="text-lg font-semibold">Location</h2>
-         <div className="mt-3">
-          <PropertyMapWrapper
-          latitude={property.latitude}
-          longitude={property.longitude}
-           title={property.title}
-        />
-      </div>
+    <h2 className="text-lg font-semibold">Location</h2>
+    <div className="mt-3">
+     <PropertyMapWrapper
+     latitude={property.latitude}
+     longitude={property.longitude}
+      title={property.title}
+      walkMinutes={property.walkMinutes}
+      cycleMinutes={property.cycleMinutes}
+   />
+     </div>
     </div>
     </div>
 

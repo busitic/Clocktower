@@ -51,7 +51,7 @@ export function PropertyRowActions({ propertyId, isAvailable }: PropertyRowActio
         <span className="text-xs text-muted-foreground w-14">{isAvailable ? "Available" : "Hidden"}</span>
       </div>
 
-      <Button variant="ghost" size="icon" render={<Link href={`/dashboard/landlord/properties/${propertyId}/edit`} />}>
+      <Button variant="ghost" size="icon" nativeButton={false} render={<Link href={`/dashboard/landlord/properties/${propertyId}/edit`} />}>
         <Pencil className="h-4 w-4" />
       </Button>
 

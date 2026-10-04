@@ -9,7 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MapPin, Heart, MessageSquare, LayoutDashboard, LogOut } from "lucide-react";
+import {
+  MapPin, Heart, MessageSquare, LayoutDashboard, LogOut,
+  Building2, ClipboardList, Flag, Plus,
+} from "lucide-react";
 
 export async function Navbar() {
   const session = await auth();
@@ -28,21 +31,29 @@ export async function Navbar() {
             Find a place
           </Link>
           {user?.role === "LANDLORD" && (
-            <Link href="/landlord/dashboard" className="hover:text-brick transition-colors">
+            <Link href="/dashboard/landlord/properties" className="hover:text-brick transition-colors">
               My listings
             </Link>
+          )}
+          {user?.role === "ADMIN" && (
+            <>
+              <Link href="/dashboard/admin/moderation" className="hover:text-brick transition-colors">
+                Moderation
+              </Link>
+              <Link href="/dashboard/admin/reports" className="hover:text-brick transition-colors">
+                Reports
+              </Link>
+            </>
           )}
         </nav>
 
         <div className="flex items-center gap-3">
           {!user && (
             <>
-              {/* Base UI's Button takes the element to render AS via `render`,
-                  not a wrapped child via `asChild`. */}
-              <Button variant="ghost" render={<Link href="/login" />}>
+              <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
                 Log in
               </Button>
-              <Button render={<Link href="/register" />}>Sign up</Button>
+              <Button nativeButton={false} render={<Link href="/register" />}>Sign up</Button>
             </>
           )}
 
@@ -74,18 +85,32 @@ export async function Navbar() {
                 )}
                 {user.role === "LANDLORD" && (
                   <>
-                    <DropdownMenuItem render={<Link href="/landlord/dashboard" />}>
+                    <DropdownMenuItem render={<Link href="/dashboard/landlord" />}>
                       <LayoutDashboard /> Dashboard
                     </DropdownMenuItem>
-                    <DropdownMenuItem render={<Link href="/landlord/enquiries" />}>
+                    <DropdownMenuItem render={<Link href="/dashboard/landlord/properties" />}>
+                      <Building2 /> My listings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/dashboard/landlord/properties/new" />}>
+                      <Plus /> Add property
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/dashboard/landlord/enquiries" />}>
                       <MessageSquare /> Enquiries
                     </DropdownMenuItem>
                   </>
                 )}
                 {user.role === "ADMIN" && (
-                  <DropdownMenuItem render={<Link href="/admin" />}>
-                    <LayoutDashboard /> Admin
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem render={<Link href="/dashboard/admin" />}>
+                      <LayoutDashboard /> Admin overview
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/dashboard/admin/moderation" />}>
+                      <ClipboardList /> Moderation
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/dashboard/admin/reports" />}>
+                      <Flag /> Reports
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuSeparator />
                 <form
@@ -94,7 +119,7 @@ export async function Navbar() {
                     await signOut({ redirectTo: "/" });
                   }}
                 >
-                  <DropdownMenuItem render={<button type="submit" className="w-full" />}>
+                  <DropdownMenuItem nativeButton render={<button type="submit" className="w-full" />}>
                     <LogOut /> Log out
                   </DropdownMenuItem>
                 </form>

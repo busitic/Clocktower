@@ -11,6 +11,8 @@ interface PropertyMapWrapperProps {
   latitude: number;
   longitude: number;
   title: string;
+  walkMinutes?: number | null;
+  cycleMinutes?: number | null;
 }
 
 export function PropertyMapWrapper(props: PropertyMapWrapperProps) {

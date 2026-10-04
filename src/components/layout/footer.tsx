@@ -15,14 +15,14 @@ export function Footer () {
             <div>
           <p className="text-sm font-medium">For students</p>
           <ul className="text-muted-foreground mt-2 space-y-1 text-sm">
-            <li><Link href="/properties" className="hover:text-foreground">Search properties </Link></li>
-            <li><Link href="/properties" className="hover:text-foreground">Create an account </Link></li>
+            <li><Link href="/properties" className="hover:text-foreground">Search properties</Link></li>
+            <li><Link href="/register" className="hover:text-foreground">Create an account</Link></li>
           </ul>
           </div>
             <div>
           <p className="text-sm font-medium">For landlords</p>
           <ul className="text-muted-foreground mt-2 space-y-1 text-sm">
-            <li><Link href="/properties" className="hover:text-foreground">List a property</Link></li>
+            <li><Link href="/dashboard/landlord/properties/new" className="hover:text-foreground">List a property</Link></li>
           </ul>
          </div>
         </div>

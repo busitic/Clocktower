@@ -130,6 +130,7 @@ model User {
     replies EnquiryReply[]
     reports PropertyReport[]
     views PropertyView[]
+    passwordResetTokens PasswordResetToken[]
     accounts Account[]
     sessions Session[]
 
@@ -180,6 +181,20 @@ model VerificationToken {
   expires DateTime
 
   @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+ 
+  
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Property {
@@ -248,6 +263,8 @@ model Property {
   @@index([availableFrom])
   @@index([status, city, rentPence])
 }
+
+
 
 model PropertyImage {
   id         String  @id @default(cuid())

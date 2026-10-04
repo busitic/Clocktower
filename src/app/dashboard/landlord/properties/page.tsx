@@ -35,7 +35,7 @@ export default async function LandlordPropertiesPage() {
           <p className="text-muted-foreground">{properties.length} listing{properties.length !== 1 && "s"}</p>
         </div>
         {/* render={<X/>} not asChild — Base UI (style: base-vega), per Phase 5 */}
-        <Button render={<Link href="/dashboard/landlord/properties/new" />}>
+        <Button nativeButton={false} render={<Link href="/dashboard/landlord/properties/new" />}>
           <Plus className="h-4 w-4 mr-1.5" />
           Add property
         </Button>
