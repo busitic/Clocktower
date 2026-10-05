@@ -137,10 +137,14 @@ export function PropertyForm({
       toast.error("Every image needs a description before you can submit.");
       return;
     }
-    startTransition(async () => {
+        startTransition(async () => {
       try {
         await onSubmit(data, images);
       } catch (err) {
+        const digest = (err as { digest?: unknown } | null)?.digest;
+        if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+          throw err;
+        }
         toast.error(err instanceof Error ? err.message : "Something went wrong.");
       }
     });
