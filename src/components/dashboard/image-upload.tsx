@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 export interface UploadedImage {
   url: string;
-  fileKey: string;
+  fileKey?: string;
   altText: string;
 }
 
@@ -56,7 +56,7 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
   return (
     <div className="space-y-3">
       {images.map((img, index) => (
-        <div key={img.fileKey} className="flex items-center gap-2">
+        <div key={img.fileKey ?? img.url} className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element -- quick
               preview thumbnail; next/image needs fixed dimensions this
               tight loop doesn't have readily, and these are small previews */}
