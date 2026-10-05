@@ -47,17 +47,17 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              New password
-            </label>
-            <PasswordInput
-              id="confirm"
-                 required
-               autoComplete="new-password"
-               value={confirm}
-                 onChange={(e) => setConfirm(e.target.value)}
-               />
-          </div>
+                 <label htmlFor="password" className="text-sm font-medium">
+                  New password
+                   </label>
+             <PasswordInput
+              id="password"
+              required
+              autoComplete="new-password"
+              value={password}
+               onChange={(e) => setPassword(e.target.value)}
+                 />
+             </div>
           <div className="space-y-2">
             <label htmlFor="confirm" className="text-sm font-medium">
               Confirm new password
