@@ -82,7 +82,7 @@ interface PropertyFormProps {
   defaultValues?: Partial<PropertyFormClientInput>;
   defaultImages?: UploadedImage[];
   amenities: { id: string; slug: string; name: string; category: string }[];
-  onSubmit: (data: PropertyFormClientOutput, images: UploadedImage[]) => Promise<void>;
+  onSubmit: (data: PropertyFormClientOutput, images: UploadedImage[]) => Promise<unknown>;
   submitLabel?: string;
 }
 
@@ -137,10 +137,17 @@ export function PropertyForm({
       toast.error("Every image needs a description before you can submit.");
       return;
     }
-        startTransition(async () => {
+    startTransition(async () => {
       try {
-        await onSubmit(data, images);
+        const result = (await onSubmit(data, images)) as
+          | { ok?: boolean; error?: string }
+          | undefined;
+        if (result?.ok === false && result.error) {
+          toast.error(result.error);
+        }
       } catch (err) {
+        // redirect() works by throwing a special error. Re-throw it so
+        // Next.js can do the navigation instead of showing it as a toast.
         const digest = (err as { digest?: unknown } | null)?.digest;
         if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
           throw err;

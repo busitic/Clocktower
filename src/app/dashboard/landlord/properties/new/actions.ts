@@ -15,11 +15,31 @@ const imageSchema = z
     altText: z.string().trim().min(3),
   }))
   .min(1, "Add at least one image");
-async function geocodePostcode(postcode: string) {
-  const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode.trim())}`);
-  if (!res.ok) throw new Error("Couldn't find that postcode — double check it and try again.");
-  const data = await res.json();
-  return { latitude: data.result.latitude as number, longitude: data.result.longitude as number };
+
+type GeocodeResult =
+  | { ok: true; latitude: number; longitude: number }
+  | { ok: false; error: string };
+
+async function geocodePostcode(postcode: string): Promise<GeocodeResult> {
+  try {
+    const res = await fetch(
+      `https://api.postcodes.io/postcodes/${encodeURIComponent(postcode.trim())}`,
+    );
+    if (res.status === 404) {
+      return { ok: false, error: "We couldn't find that postcode. Check it and try again." };
+    }
+    if (!res.ok) {
+      return { ok: false, error: "Postcode lookup is unavailable right now. Please try again shortly." };
+    }
+    const data = await res.json();
+    return {
+      ok: true,
+      latitude: data.result.latitude as number,
+      longitude: data.result.longitude as number,
+    };
+  } catch {
+    return { ok: false, error: "Postcode lookup is unavailable right now. Please try again shortly." };
+  }
 }
 
 function slugify(title: string) {
@@ -32,7 +52,10 @@ function slugify(title: string) {
 export async function createProperty(rawInput: PropertyFormClientOutput, rawImages: unknown) {
   const user = await requireRole("LANDLORD");
 
-  const { latitude, longitude } = await geocodePostcode(rawInput.postcode);
+  const geo = await geocodePostcode(rawInput.postcode);
+  if (!geo.ok) return { ok: false as const, error: geo.error };
+  const { latitude, longitude } = geo;
+
   const input = propertyInputSchema.parse({ ...rawInput, latitude, longitude });
   const images = imageSchema.parse(rawImages);
   const distance = calculateCampusDistance(latitude, longitude);
